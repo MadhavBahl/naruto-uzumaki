@@ -1,6 +1,6 @@
 # Naruto Uzumaki — The Will of Fire
 
-A compact, cinematic, unofficial Naruto tribute. React 19, Vite, Motion, Lucide, and custom CSS. No backend, API keys, connectors, or paid services required.
+A compact, cinematic, unofficial Naruto tribute. React 19, Vite, Motion, Three.js, Lucide, and custom CSS. No backend, API keys, connectors, or paid services required.
 
 ## Run
 
@@ -15,12 +15,27 @@ A **Naruto: development server** task is also included in VS Code.
 
 ## The experience
 
-- Layered Naruto hero with pointer parallax, animated embers, film grain, and a rotating chakra seal.
-- Shinobi, Sage, and Kurama transformations with their own artwork and accent colors.
+- Layered Naruto hero with pointer-driven perspective parallax, animated embers, film grain, and a three-dimensional chakra seal with orbiting glyphs. The portrait keeps its original size and composition during scrolling.
+- Shinobi, Sage, and Kurama transformations with artwork, accent colors, and expanding energy-wave transitions.
+- Spring-driven magnetic CTA, holographic story-card tilt, drifting chakra fragments, and a reading-progress line.
 - Three interactive story chapters, from the beginning to Seventh Hokage.
-- Rasengan, Shadow Clone, and Sage Mode chakra visualizations with charge/release interactions.
+- Real-time Three.js Rasengan, Shadow Clone, and Sage Mode visualizations: custom flowing-surface GLSL shaders, orbital filaments, a GPU particle field, splitting clone orbs, and charge/release shockwaves.
 - Optional, original synthesized ambience. Sound starts off; no copyrighted soundtrack is used.
 - Responsive mobile navigation, keyboard-operated tabs, accessible native credits dialog, animation pause control, and system reduced-motion support.
+
+### Try the 3D experience
+
+In **The Arsenal**, drag the orb to orbit it (horizontal swipe on mobile; vertical gestures still scroll). The left/right/reset buttons provide a keyboard-accessible alternative. Choose a technique and channel chakra to see it charge and release. Move over the hero and story card for the depth effects, or switch forms to trigger the energy wave.
+
+### Motion and performance
+
+- Three.js is a separate, lazily imported chunk loaded only near the arsenal. No 3D models, texture downloads, or image connectors are needed.
+- The renderer caps resolution at 1.5× on desktop / 1.25× on touch devices, and animation at 60 / 30 fps respectively, with 900 / 420 GPU particles. There is no bloom postprocessing or frame-by-frame React state update.
+- The WebGL animation loop stops outside the viewport, in hidden tabs, and when animations are paused. Geometries, materials, observers, event listeners, and the GPU context are disposed on unmount.
+- Reduced motion skips the 3D download on initial load and uses the CSS fallback. OS preference changes are applied live. Explicit technique and view controls continue to work when motion is paused.
+- Scrolling remains native, without hero zoom, pinning, or scroll-triggered camera movement. Depth responds to pointer movement and explicit form changes instead.
+- Devices without WebGL2, failed 3D downloads, shader errors, and lost GPU contexts retain the CSS chakra visualization rather than an empty panel.
+- Browser tests cover desktop/mobile interactions, real WebGL compilation, touch orbiting, GPU suspension, live motion-preference changes, context loss, fallback behavior, and automated accessibility checks.
 
 ## Artwork and rights
 
@@ -44,10 +59,15 @@ Barlow Condensed and DM Sans are self-hosted through Fontsource (SIL Open Font L
 
 - `src/App.jsx` — page sections and interactions
 - `src/data.js` — transformation, chapter, and technique content
-- `src/styles.css` — design system, effects, and responsive layouts
-- `src/components/` — leaf mark and ember canvas
+- `src/styles.css` — original design system and responsive layouts
+- `src/advanced-motion.css` — isolated cinematic motion and 3D presentation layer
+- `src/components/` — hero atmosphere, tilt card, magnetic CTA, chakra scene, leaf mark, and embers
+- `src/graphics/createChakraScene.js` — Three.js renderer, GLSL shaders, pointer controls, and GPU lifecycle
+- `src/hooks/useMotionPreference.js` — live reduced-motion subscription
 - `src/hooks/useAmbientAudio.js` — opt-in synthesized sound
 - `public/images/` — optimized local character art
 - `tests/landing.spec.js` — desktop/mobile functional and accessibility checks
+- `tests/advanced-motion.spec.js` — 3D, touch, lifecycle, and fallback regression tests
+- `tests/hero-composition.spec.js` — stable artwork dimensions during scrolling and form-control regression checks
 
 The original reference video remains untouched in `sample/` and is not included in the production build. Deploy the generated `dist/` folder to any static host.

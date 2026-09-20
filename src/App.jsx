@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, MotionConfig, useMotionValue, useReducedMotion, useSpring } from 'motion/react'
+import { AnimatePresence, motion, MotionConfig, useMotionValue, useScroll, useSpring, useTransform } from 'motion/react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, ChevronLeft, ChevronRight, Flame, Menu, Pause, Play, Volume2, VolumeX, X, Zap } from 'lucide-react'
 import LeafSymbol from './components/LeafSymbol.jsx'
 import Embers from './components/Embers.jsx'
+import HeroAtmosphere from './components/HeroAtmosphere.jsx'
+import TiltCard from './components/TiltCard.jsx'
+import MagneticLink from './components/MagneticLink.jsx'
+import ChakraScene from './components/ChakraScene.jsx'
 import useAmbientAudio from './hooks/useAmbientAudio.js'
+import useMotionPreference from './hooks/useMotionPreference.js'
 import { chapters, forms, techniques } from './data.js'
 
 function navigateTabs(event, index, count, select) {
@@ -23,7 +28,7 @@ function Reveal({ children, className = '', still, delay = 0 }) {
 }
 
 function App() {
-  const prefersReducedMotion = useReducedMotion()
+  const prefersReducedMotion = useMotionPreference()
   const [paused, setPaused] = useState(false)
   const still = paused || prefersReducedMotion
   const [form, setForm] = useState(0)
@@ -39,6 +44,9 @@ function App() {
   const y = useMotionValue(0)
   const artX = useSpring(x, { stiffness: 80, damping: 28 })
   const artY = useSpring(y, { stiffness: 80, damping: 28 })
+  const rotateY = useTransform(artX, [-16, 16], [-4, 4])
+  const rotateX = useTransform(artY, [-10, 10], [3, -3])
+  const { scrollYProgress } = useScroll()
   const currentForm = forms[form]
   const currentChapter = chapters[chapter]
   const currentTechnique = techniques[technique]
@@ -63,8 +71,8 @@ function App() {
   function moveArtwork(event) {
     if (still || event.pointerType === 'touch') return
     const bounds = event.currentTarget.getBoundingClientRect()
-    x.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 22)
-    y.set(((event.clientY - bounds.top) / bounds.height - 0.5) * 15)
+    x.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 32)
+    y.set(((event.clientY - bounds.top) / bounds.height - 0.5) * 20)
   }
 
   function selectTechnique(index) {
@@ -86,6 +94,7 @@ function App() {
   return (
     <MotionConfig reducedMotion={still ? 'always' : 'never'}>
       <div className={`app ${still ? 'motion-paused' : ''}`} style={{ '--accent': currentForm.color }}>
+        <motion.div className="reading-progress" style={{ scaleX: scrollYProgress }} aria-hidden="true" />
         <a className="skip-link" href="#main">Skip to content</a>
         <header className="site-header">
           <a className="brand" href="#home" aria-label="Uzumaki archive home" onClick={() => setMenuOpen(false)}>
@@ -112,9 +121,10 @@ function App() {
             <div className="hero-watermark" aria-hidden="true">NARUTO</div>
             <div className="hero-art" aria-hidden="true">
               <div className="sun-disc"><div className="sun-orbit" /><span className="sun-kanji">忍</span></div>
-              <motion.div className="character-parallax" style={{ x: still ? 0 : artX, y: still ? 0 : artY }}>
+              <HeroAtmosphere form={form} still={still} />
+              <motion.div className="character-parallax" style={{ x: still ? 0 : artX, y: still ? 0 : artY, rotateX: still ? 0 : rotateX, rotateY: still ? 0 : rotateY }}>
                 <AnimatePresence mode="sync">
-                  <motion.img className={`hero-character character--${currentForm.className}`} key={currentForm.name} src={currentForm.image} alt="" width="1400" height="1500" fetchPriority="high" initial={{ opacity: 0, x: still ? 0 : 45, filter: still ? 'none' : 'blur(6px)' }} animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, x: still ? 0 : -30 }} transition={transition} />
+                  <motion.img className={`hero-character character--${currentForm.className}`} key={currentForm.name} src={currentForm.image} alt="" width="1400" height="1500" fetchPriority="high" initial={{ opacity: 0, x: still ? 0 : 45, scale: still ? 1 : 1.06, rotateY: still ? 0 : -12 }} animate={{ opacity: 1, x: 0, scale: 1, rotateY: 0 }} exit={{ opacity: 0, x: still ? 0 : -30, scale: still ? 1 : 0.96 }} transition={transition} />
                 </AnimatePresence>
               </motion.div>
               <span className="vertical-japanese" lang="ja">うずまきナルト</span>
@@ -128,7 +138,7 @@ function App() {
                 <div className="hero-caption"><span className="short-line" /><p>THE WILL OF FIRE</p><span lang="ja">火の意志</span></div>
                 <p className="hero-description">An outcast. A dreamer. A little too loud.<br />The shinobi who turned “never” into his ninja way.</p>
                 <div className="hero-actions">
-                  <a className="button button-primary" href="#story">Discover his story <ArrowUpRight size={18} /></a>
+                  <MagneticLink still={still} className="button button-primary" href="#story">Discover his story <ArrowUpRight size={18} /></MagneticLink>
                   <a className="text-link" href="#arsenal"><span className="small-play"><Play size={11} fill="currentColor" /></span>Feel the chakra</a>
                 </div>
                 <div className="hero-dossier"><LeafSymbol /><span>KONOHAGAKURE<span>HIDDEN LEAF · LAND OF FIRE</span></span><span className="dossier-divider" /><span>NO. 012607<span>SHINOBI REGISTRATION</span></span></div>
@@ -162,13 +172,13 @@ function App() {
                   <AnimatePresence mode="wait"><motion.div key={chapter} initial={{ opacity: 0, y: still ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: still ? 0 : 0.2 }}><h3>{currentChapter.title}</h3><p className="body-copy">{currentChapter.description}</p><p className="chapter-tag"><span />{currentChapter.tag}</p></motion.div></AnimatePresence>
                 </div>
               </Reveal>
-              <Reveal still={still} className="story-art-card" delay={0.1}>
+              <TiltCard still={still} className="story-art-card">
                 <div className="card-topline"><span>THE MAKING OF A HOKAGE</span><ArrowUpRight size={16} /></div>
                 <span className="story-kanji" aria-hidden="true" lang="ja">{currentChapter.japanese}</span>
                 <div className="story-art-stage"><AnimatePresence mode="sync"><motion.img key={chapter} src={currentChapter.image} alt={currentChapter.alt} loading="lazy" width="700" height="1100" initial={{ opacity: 0, x: still ? 0 : 25 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: still ? 0 : -25 }} transition={transition} /></AnimatePresence></div>
                 <span className="story-image-label">UZUMAKI<br /><b>NARUTO</b></span>
                 <div className="story-card-bottom"><span><b>{currentChapter.number}</b> / 03</span><div><button className="icon-button" aria-label="Previous story chapter" onClick={() => setChapter((chapter + 2) % 3)}><ChevronLeft size={17} /></button><button className="icon-button" aria-label="Next story chapter" onClick={() => setChapter((chapter + 1) % 3)}><ChevronRight size={17} /></button></div></div>
-              </Reveal>
+              </TiltCard>
             </div>
           </section>
 
@@ -178,12 +188,7 @@ function App() {
               <Reveal still={still} className={`chakra-stage effect--${currentTechnique.effect} phase--${phase}`}>
                 <div className="chakra-grid" aria-hidden="true" />
                 <span className="chakra-coordinate coordinate-top">CHAKRA VISUALIZATION / {String(technique + 1).padStart(2, '0')}</span>
-                <div className="chakra-outer-ring" aria-hidden="true"><span /><span /><span /><span /></div>
-                <div className="chakra-system" aria-hidden="true">
-                  <div className="chakra-aura" /><div className="chakra-orbit orbit-one" /><div className="chakra-orbit orbit-two" /><div className="chakra-orbit orbit-three" />
-                  <div className="chakra-satellite satellite-one" /><div className="chakra-satellite satellite-two" />
-                  <div className="chakra-core"><div className="core-swirl" /><span className="core-center" /></div><div className="release-ring" />
-                </div>
+                <ChakraScene effect={currentTechnique.effect} phase={phase} still={still} />
                 <span className="chakra-japanese" lang="ja">{currentTechnique.japanese}</span>
                 <div className="chakra-stage-bottom"><span><span className="live-dot" />{phase === 'charging' ? 'GATHERING CHAKRA' : phase === 'released' ? 'TECHNIQUE ACTIVATED' : 'CHAKRA READY'}</span><span>{phase === 'charging' ? '充填' : '準備'}</span></div>
               </Reveal>
@@ -195,6 +200,7 @@ function App() {
                   <h3>{currentTechnique.name}<span lang="ja">{currentTechnique.japanese}</span></h3>
                   <p className="body-copy">{currentTechnique.description}</p>
                   <button className={`button chakra-button ${phase === 'charging' ? 'is-charging' : ''}`} onClick={activateTechnique} disabled={phase === 'charging'}>{phase === 'released' ? <Check size={17} /> : <Zap size={17} />}<span>{phase === 'charging' ? 'Channeling chakra…' : phase === 'released' ? 'Try it again' : currentTechnique.action}</span><ArrowUpRight size={17} /></button>
+                  <div className="charge-readout" aria-hidden="true"><span>CHAKRA OUTPUT</span><span className="charge-readout-track"><motion.span className="charge-readout-fill" initial={false} animate={{ scaleX: phase === 'idle' ? 0.08 : 1 }} transition={{ duration: still ? 0 : phase === 'charging' ? 1.6 : 0.3, ease: 'linear' }} /></span><span>{phase === 'charging' ? 'FOCUSING' : phase === 'released' ? '100%' : 'STANDBY'}</span></div>
                   <p className="interaction-hint" aria-live="polite">{phase === 'released' ? currentTechnique.message : phase === 'charging' ? 'Focus. You’ve got this.' : 'Go on. There’s a shinobi in you, too.'}</p>
                 </div>
               </Reveal>
