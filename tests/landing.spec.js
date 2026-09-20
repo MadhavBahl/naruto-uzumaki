@@ -29,6 +29,7 @@ test('artwork, transformations, story and all chakra techniques work', async ({ 
     ['Rasengan', 'Channel your chakra', 'Rasengan released.'],
     ['Shadow Clone', 'Create shadow clones', 'Shadow clone jutsu.'],
     ['Sage Mode', 'Gather nature energy', 'Nature energy balanced.'],
+    ['Rasenshuriken', 'Infuse wind chakra', 'Wind Release: Rasenshuriken.'],
   ]) {
     await page.getByRole('tab', { name, exact: true }).click()
     await page.getByRole('button', { name: action, exact: true }).click()

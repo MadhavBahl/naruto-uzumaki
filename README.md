@@ -13,13 +13,28 @@ A compact, cinematic, unofficial Naruto tribute. React 19, Vite, Motion, Three.j
 
 A **Naruto: development server** task is also included in VS Code.
 
+## GitHub Pages deployment
+
+Site URL: **https://madhavbahl.github.io/naruto-uzumaki/**
+
+The **Deploy to GitHub Pages** workflow builds and publishes on pushes to `master`, or via its manual **Run workflow** action. It runs `npm ci`, lint, and the production build, then uploads only `dist/` using GitHub's official Pages actions. No deployment token is stored in the repository.
+
+Repository **Settings → Pages → Source** must be **GitHub Actions**. The workflow uses the `github-pages` environment and a short-lived GitHub-provided token.
+
+- Production builds and previews use `/naruto-uzumaki/`; local development still uses `/`.
+- Images, the favicon, and the hero preload respect Vite's base path.
+- Run `npm run test:pages` to test the built site under its actual repository subpath, including the lazily loaded 3D scene.
+- If the repository name or hosting path changes, update `base` in `vite.config.js` and the deployment test URL.
+- Artwork credits remain visible; see the rights notes below before commercial reuse.
+
 ## The experience
 
 - Layered Naruto hero with pointer-driven perspective parallax, animated embers, film grain, and a three-dimensional chakra seal with orbiting glyphs. The portrait keeps its original size and composition during scrolling.
 - Shinobi, Sage, and Kurama transformations with artwork, accent colors, and expanding energy-wave transitions.
 - Spring-driven magnetic CTA, holographic story-card tilt, drifting chakra fragments, and a reading-progress line.
 - Three interactive story chapters, from the beginning to Seventh Hokage.
-- Real-time Three.js Rasengan, Shadow Clone, and Sage Mode visualizations: custom flowing-surface GLSL shaders, orbital filaments, a GPU particle field, splitting clone orbs, and charge/release shockwaves.
+- Four real-time Three.js techniques—Rasengan, Shadow Clone, Sage Mode, and Rasenshuriken—with custom flowing-surface GLSL shaders, orbital filaments, a GPU particle field, splitting clone orbs, and charge/release shockwaves.
+- Rasenshuriken adds four curved, rotating wind blades, flowing blade filaments, a flattened wind-particle field, and an expanding release ring. A matching four-bladed CSS version supports devices without WebGL and reduced motion.
 - Optional, original synthesized ambience. Sound starts off; no copyrighted soundtrack is used.
 - Responsive mobile navigation, keyboard-operated tabs, accessible native credits dialog, animation pause control, and system reduced-motion support.
 

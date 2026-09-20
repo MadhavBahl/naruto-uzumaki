@@ -112,6 +112,28 @@
 .chakra-coordinate { max-width: calc(100% - 125px); line-height: 1.6; }
 .chakra-stage-bottom { z-index: 2; }
 .chakra-stage.effect--sage { --chakra: #ffb950; }
+.chakra-stage.effect--rasenshuriken { --chakra: #9aedff; }
+.wind-shuriken { display: none; position: absolute; inset: -40px; }
+.effect--rasenshuriken .wind-shuriken { display: block; }
+.wind-rotor { position: absolute; inset: 0; animation: rotate 5.5s linear infinite; }
+.wind-blade {
+  position: absolute;
+  left: 50%; top: 36%; width: 50%; height: 28%;
+  transform-origin: 0 50%;
+  transform: rotate(calc(var(--blade-index) * 90deg));
+  clip-path: polygon(0 35%, 35% 5%, 65% 15%, 100% 50%, 58% 63%, 25% 82%, 0 65%);
+  background: linear-gradient(14deg, #5fceec66, #d6faff 48%, #9aedff88 60%, #b7f5ff22);
+}
+.effect--rasenshuriken .chakra-core { scale: .73; }
+.effect--rasenshuriken .chakra-orbit { opacity: .25; }
+.effect--rasenshuriken .chakra-aura { background: radial-gradient(circle, #a8eeff35, transparent 68%); }
+.effect--rasenshuriken.phase--charging .wind-rotor { animation-duration: 3s; }
+.wind-release { position: absolute; inset: 5%; border: 1px solid #bdf5ff; border-radius: 50%; opacity: 0; }
+.effect--rasenshuriken.phase--released .wind-release { animation: wind-release 1.3s ease-out; }
+.motion-paused .wind-release { display: none; }
+/* Longer English and Japanese technique names must wrap without narrowing the page. */
+.arsenal-copy h3 { flex-wrap: wrap; column-gap: 15px; row-gap: 3px; }
+.technique-tabs button { white-space: nowrap; }
 .chakra-stage::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 45px #090f0988; pointer-events: none; z-index: 1; }
 .charge-readout {
   display: flex; align-items: center; gap: 10px; margin-top: 17px; max-width: 300px;
@@ -129,6 +151,11 @@
   0%, 100% { transform: rotateX(12deg) rotateY(-20deg) rotateZ(-7deg); }
   50% { transform: rotateX(-16deg) rotateY(16deg) rotateZ(5deg); }
 }
+@keyframes wind-release {
+  0% { transform: scale(.6); opacity: 0; }
+  20% { opacity: .55; }
+  100% { transform: scale(1.65); opacity: 0; }
+}
 @keyframes ribbon-drift {
   0%, 100% { transform: rotate(-28deg) rotateX(55deg) translateY(0); opacity: .3; }
   50% { transform: rotate(-10deg) rotateX(35deg) translateY(-25px); opacity: .65; }
@@ -136,6 +163,10 @@
 @keyframes fragment-flight {
   0%, 100% { transform: translate3d(0, 12px, 0) rotate(var(--fragment-angle)) rotateY(0deg); opacity: .15; }
   50% { transform: translate3d(18px, -28px, 40px) rotate(calc(var(--fragment-angle) + 30deg)) rotateY(140deg); opacity: .7; }
+}
+@media (max-width: 1100px) {
+  .technique-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .technique-tabs button { min-height: 36px; }
 }
 @media (max-width: 760px) {
   .seal-perspective { width: 350px; top: 6%; left: 9%; }

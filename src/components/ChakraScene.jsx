@@ -6,6 +6,7 @@ function ChakraFallback() {
     <div className="chakra-outer-ring"><span /><span /><span /><span /></div>
     <div className="chakra-system">
       <div className="chakra-aura" /><div className="chakra-orbit orbit-one" /><div className="chakra-orbit orbit-two" /><div className="chakra-orbit orbit-three" />
+      <div className="wind-shuriken"><div className="wind-rotor">{[0, 1, 2, 3].map(index => <span className="wind-blade" key={index} style={{ '--blade-index': index }} />)}</div><span className="wind-release" /></div>
       <div className="chakra-satellite satellite-one" /><div className="chakra-satellite satellite-two" />
       <div className="chakra-core"><div className="core-swirl" /><span className="core-center" /></div><div className="release-ring" />
     </div>

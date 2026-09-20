@@ -26,8 +26,11 @@ test('live 3D compiles, orbits, transforms and passes accessibility checks', asy
   const canvas = await openScene(page)
   const initialView = await canvas.getAttribute('data-view')
   await page.getByRole('button', { name: 'Rotate chakra right' }).click()
+  await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
   await expect(canvas).not.toHaveAttribute('data-view', initialView)
   await page.getByRole('button', { name: 'Reset chakra view' }).click()
+  // Mobile clicks can reveal only the controls; offscreen canvas rendering is intentionally paused.
+  await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
   await expect(canvas).toHaveAttribute('data-view', initialView)
 
   const box = await page.locator('.chakra-webgl').boundingBox()
@@ -55,18 +58,23 @@ test('live 3D compiles, orbits, transforms and passes accessibility checks', asy
     ['Rasengan', 'rasengan', 'Channel your chakra'],
     ['Shadow Clone', 'clones', 'Create shadow clones'],
     ['Sage Mode', 'sage', 'Gather nature energy'],
+    ['Rasenshuriken', 'rasenshuriken', 'Infuse wind chakra'],
   ]) {
     await page.getByRole('tab', { name, exact: true }).click()
     await page.getByRole('button', { name: action, exact: true }).click()
     await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
     await expect(canvas).toHaveAttribute('data-effect', effect)
     await expect(canvas).toHaveAttribute('data-phase', 'released')
+    await expect(canvas).toHaveAttribute('data-wind-blades', effect === 'rasenshuriken' ? '4' : '0')
     await nextFrames(page, 20)
     await page.locator('.chakra-stage').screenshot({ path: testInfo.outputPath(`${effect}-3d.png`), scale: 'css' })
   }
 
   const results = await new AxeBuilder({ page }).include('#arsenal').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   expect(results.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([])
+  await page.getByRole('tab', { name: 'Rasengan', exact: true }).click()
+  await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
+  await expect(canvas).toHaveAttribute('data-wind-blades', '0')
   expect(errors).toEqual([])
 })
 
@@ -79,6 +87,10 @@ test('GPU loop stops offscreen, while paused, and in a hidden tab', async ({ pag
   const pausedFrame = await canvas.getAttribute('data-frame')
   await nextFrames(page)
   await expect(canvas).toHaveAttribute('data-frame', pausedFrame)
+  await page.getByRole('tab', { name: 'Rasenshuriken', exact: true }).click()
+  await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
+  await expect(canvas).toHaveAttribute('data-wind-blades', '4')
+  await expect(canvas).toHaveAttribute('data-running', 'false')
   // Still allow deliberate keyboard/button view changes when animation is paused.
   const view = await canvas.getAttribute('data-view')
   await page.getByRole('button', { name: 'Rotate chakra left' }).click()
@@ -125,6 +137,13 @@ test('WebGL unavailability retains functional CSS effects', async ({ page }) => 
   await expect(page.locator('.chakra-experience')).toHaveAttribute('data-renderer', 'fallback')
   await expect(page.locator('.chakra-fallback')).toBeVisible()
   await expect(page.locator('.chakra-webgl canvas')).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Rasenshuriken', exact: true }).click()
+  await page.getByRole('button', { name: 'Infuse wind chakra' }).click()
+  await expect(page.locator('.interaction-hint')).toContainText('Wind Release: Rasenshuriken.')
+  await expect(page.locator('.wind-shuriken')).toBeVisible()
+  await expect(page.locator('.wind-blade')).toHaveCount(4)
+  await page.getByRole('tab', { name: 'Rasengan', exact: true }).click()
+  await expect(page.locator('.wind-shuriken')).not.toBeVisible()
 })
 
 test('reduced motion avoids downloading 3D and context loss stops the renderer', async ({ page }) => {
@@ -133,9 +152,11 @@ test('reduced motion avoids downloading 3D and context loss stops the renderer',
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
   await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
-  await page.getByRole('tab', { name: 'Shadow Clone', exact: true }).click()
-  await page.getByRole('button', { name: 'Create shadow clones' }).click()
-  await expect(page.locator('.interaction-hint')).toContainText('Shadow clone jutsu.')
+  await page.getByRole('tab', { name: 'Rasenshuriken', exact: true }).click()
+  await page.getByRole('button', { name: 'Infuse wind chakra' }).click()
+  await expect(page.locator('.interaction-hint')).toContainText('Wind Release: Rasenshuriken.')
+  await expect(page.locator('.wind-shuriken')).toBeVisible()
+  await expect(page.locator('.wind-rotor')).toHaveCSS('animation-name', 'none')
   await expect(page.locator('.chakra-webgl canvas')).toHaveCount(0)
   expect(gpuRequests).toEqual([])
   await page.emulateMedia({ reducedMotion: 'no-preference' })
@@ -152,7 +173,35 @@ test('reduced motion avoids downloading 3D and context loss stops the renderer',
   await expect(page.locator('.chakra-experience')).toHaveAttribute('data-renderer', 'fallback')
   await expect(canvas).toHaveAttribute('data-running', 'false')
   await expect(page.locator('.chakra-fallback')).toBeVisible()
+  await expect(page.locator('.wind-shuriken')).toBeVisible()
   await page.getByRole('tab', { name: 'Sage Mode', exact: true }).click()
   await page.getByRole('button', { name: 'Gather nature energy' }).click()
   await expect(page.locator('.interaction-hint')).toContainText('Nature energy balanced.')
+})
+
+test('fourth technique supports keyboard navigation and narrow layouts', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const tabs = page.getByRole('tablist', { name: 'Ninja techniques' })
+  await expect(tabs.getByRole('tab')).toHaveCount(4)
+  await tabs.getByRole('tab', { name: 'Rasengan', exact: true }).focus()
+  await page.keyboard.press('End')
+  const windTab = tabs.getByRole('tab', { name: 'Rasenshuriken', exact: true })
+  await expect(windTab).toBeFocused()
+  await expect(windTab).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tabpanel', { name: 'Rasenshuriken' })).toContainText('S-RANK · WIND RELEASE')
+  await page.keyboard.press('ArrowRight')
+  await expect(tabs.getByRole('tab', { name: 'Rasengan', exact: true })).toBeFocused()
+  await page.keyboard.press('ArrowLeft')
+  await expect(windTab).toBeFocused()
+
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  }
+  await page.setViewportSize({ width: testInfo.project.name === 'mobile' ? 390 : 1440, height: 1000 })
+  await page.locator('.chakra-stage').scrollIntoViewIfNeeded()
+  await page.locator('#arsenal').screenshot({ path: testInfo.outputPath('rasenshuriken-fallback.png'), scale: 'css' })
+  const results = await new AxeBuilder({ page }).include('#arsenal').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  expect(results.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([])
 })

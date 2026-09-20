@@ -3,9 +3,10 @@ import {
   Mesh, MeshBasicMaterial, PerspectiveCamera, Points, Scene, ShaderMaterial,
   SphereGeometry, TorusGeometry, Vector2, WebGLRenderer,
 } from 'three'
+import { createWindShuriken } from './createWindShuriken.js'
 
 const TAU = Math.PI * 2
-const colors = { rasengan: '#63d6ff', clones: '#86f6b6', sage: '#ffb950' }
+const colors = { rasengan: '#63d6ff', clones: '#86f6b6', sage: '#ffb950', rasenshuriken: '#9aedff' }
 
 const sphereVertex = /* glsl */ `
   uniform float uTime;
@@ -55,6 +56,7 @@ const particleVertex = /* glsl */ `
   uniform float uCharge;
   uniform float uBurst;
   uniform float uPixelRatio;
+  uniform float uWind;
   attribute float aSeed;
   varying float vAlpha;
   void main() {
@@ -62,6 +64,8 @@ const particleVertex = /* glsl */ `
     mat2 rotation = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
     vec3 p = position;
     p.xz = rotation * p.xz;
+    p.z *= 1.0 - uWind * 0.82;
+    p.xy = mix(p.xy, rotation * p.xy, uWind);
     p *= 1.0 - uCharge * 0.3 + uBurst * (0.5 + aSeed);
     p.y += sin(uTime + aSeed * 60.0) * 0.09;
     vec4 viewPosition = modelViewMatrix * vec4(p, 1.0);
@@ -114,7 +118,7 @@ export function createChakraScene(host, initial, onLost) {
   const targetColor = color.clone()
   const uniforms = {
     uTime: { value: 0 }, uCharge: { value: 0 }, uBurst: { value: 0 },
-    uPixelRatio: { value: pixelRatio }, uColor: { value: color },
+    uPixelRatio: { value: pixelRatio }, uColor: { value: color }, uWind: { value: 0 },
   }
   const coreGeometry = new SphereGeometry(0.72, compact ? 40 : 64, compact ? 24 : 40)
   const coreMaterial = new ShaderMaterial({
@@ -169,6 +173,9 @@ export function createChakraScene(host, initial, onLost) {
   }
   world.add(orbits)
 
+  const windShuriken = createWindShuriken(uniforms)
+  world.add(windShuriken.group)
+
   const particleCount = compact ? 420 : 900
   const positions = new Float32Array(particleCount * 3)
   const seeds = new Float32Array(particleCount)
@@ -211,6 +218,7 @@ export function createChakraScene(host, initial, onLost) {
   let frameCount = 0
   let charge = 0
   let cloneSpread = 0
+  let windStrength = 0
   let shaderFailed = false
   const interval = 1000 / (compact ? 30 : 60)
 
@@ -229,7 +237,10 @@ export function createChakraScene(host, initial, onLost) {
     uniforms.uBurst.value = burst
     const cloneTarget = settings.effect === 'clones' ? settings.phase === 'released' ? 1 : 0.58 : 0
     cloneSpread += (cloneTarget - cloneSpread) * smoothing
-    central.group.scale.setScalar((1 + charge * 0.16 - burst * 0.08) * (1 - cloneSpread * 0.32))
+    windStrength += ((settings.effect === 'rasenshuriken' ? 1 : 0) - windStrength) * smoothing
+    uniforms.uWind.value = windStrength
+    windShuriken.update(delta, windStrength, charge, burst)
+    central.group.scale.setScalar((1 + charge * 0.16 - burst * 0.08) * (1 - cloneSpread * 0.32) * (1 - windStrength * 0.27))
     central.group.rotation.y = simulationTime * 0.13
     central.core.rotation.z = simulationTime * 0.06
     central.strands.forEach((strand, index) => {
@@ -246,7 +257,10 @@ export function createChakraScene(host, initial, onLost) {
     orbits.rotation.y = simulationTime * 0.07
     orbits.rotation.z = settings.effect === 'sage' ? simulationTime * -0.1 : simulationTime * 0.06
     orbits.scale.setScalar(settings.effect === 'sage' ? 1.08 + charge * 0.08 : 1)
-    orbitMaterials.forEach(material => material.color.copy(color))
+    orbitMaterials.forEach((material, index) => {
+      material.color.copy(color)
+      material.opacity = (index === 0 ? 0.26 : 0.13) * (1 - windStrength * 0.75)
+    })
     world.rotation.y += (targetRotation.x + pointer.x * 0.12 - world.rotation.y) * smoothing
     world.rotation.x += (targetRotation.y - pointer.y * 0.08 - world.rotation.x) * smoothing
     particles.rotation.y = -simulationTime * 0.05
@@ -259,6 +273,7 @@ export function createChakraScene(host, initial, onLost) {
     canvas.dataset.view = `${targetRotation.x.toFixed(2)},${targetRotation.y.toFixed(2)}`
     canvas.dataset.phase = settings.phase
     canvas.dataset.effect = settings.effect
+    canvas.dataset.windBlades = String(windShuriken.group.visible ? 4 : 0)
   }
 
   function fail() {
